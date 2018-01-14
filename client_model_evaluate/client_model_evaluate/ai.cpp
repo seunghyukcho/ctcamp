@@ -119,60 +119,31 @@ vector<double> featureDescript(Mat& m) {
 
 	/*-----don't touch-----*/
 
-	ret.push_back(m.at<Vec3b>(m.rows / 2, m.cols / 2)[0] + m.at<Vec3b>(m.rows / 2, m.cols / 2)[1] + m.at<Vec3b>(m.rows / 2, m.cols / 2)[2]);
+	/*
+	you have to fill in here with a code 
+	that make a feature vector of image m
+	*/
 
 	/*-----don't touch-----*/
 
 	return ret;
 }
 
-double dist(vector<double> feat1, vector<double> feat2)
-{
-	double score = 0;
-
-	for (int i = 0; i < feat1.size(); i++) {
-		score += abs(feat1[i] - feat2[i]);
-	}
-
-	return score;
-}
-
 int classify(Mat example, vector<pair<vector<double>, int> > &training, int nb_class) {
 	const int k = 20;
-	int predict = -1;
-	int classCount[100];
-	int maxI = -1, maxValue = -1;
-	/*-----don't touch-----*/
-
-	vector<pair<double, int> > distances;
-
-	for (int i = 0; i < training.size(); i++)
-	{
-		auto tmp = training[i];
-		distances.push_back({ dist(tmp.first, featureDescript(example)), tmp.second });
-	}
-
-	sort(distances.begin(), distances.end());
-
-	for (int i = 0; i < nb_class; i++)
-		classCount[i] = 0;
-
-	for (int i = 0; i < k && i < distances.size(); i++) {
-		classCount[distances[i].second]++;
-	}
-
-	for (int i = 0; i < nb_class; i++)
-	{
-		if (maxValue < classCount[i])
-		{
-			maxValue = classCount[i];
-			maxI = i;
-		}
-	}
-
-	predict = maxI;
+	int predict = rand() % 4;
 
 	/*-----don't touch-----*/
+
+	/*
+	you have to fill in here
+	with a code that classify example class
+	the class is 0 : apple, 1 : bomb, 2 : player, 3 : background
+	you have to make a kNN code to classify and don't use other machine learning algorithm
+	*/
+
+	/*-----don't touch-----*/
+
 	return predict;
 }
 
@@ -237,8 +208,6 @@ float model_evaluate(vector<pair<Mat, int> > training, int nb_class) {
 		vector<pair<Mat, int> > test;
 		vector<pair<vector<double>, int> > train;
 
-		printf("%d / %d\n", i, k);
-
 		for (int j = 0; j < training.size(); j++) {
 			bool check = false;
 			for (auto next : k_fold[i])
@@ -288,7 +257,7 @@ bool input(vector<pair<Mat, int> > &list, string folder, int cs) {
 			continue;
 
 		string name(FindData.cFileName);
-		Mat file = imread(realPath + name);
+		Mat file = imread(realPath + name, -1);
 
 		list.push_back({ file, cs });
 

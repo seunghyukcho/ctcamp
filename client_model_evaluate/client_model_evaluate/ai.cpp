@@ -119,19 +119,7 @@ vector<double> featureDescript(Mat& m) {
 
 	/*-----don't touch-----*/
 
-	double colorR, colorG, colorB, colorA;
-
-	colorR = colorG = colorB = colorA = 0;
-
-	for (int r = 0; r < m.rows; r++)
-		for (int c = 0; c < m.cols; c++)
-		{
-			Vec4b tmp = m.at<Vec4b>(r, c);
-			
-			ret.push_back(tmp[2]);
-			ret.push_back(tmp[1]);
-			ret.push_back(tmp[0]);
-		}
+	ret.push_back(m.at<Vec3b>(m.rows / 2, m.cols / 2)[0] + m.at<Vec3b>(m.rows / 2, m.cols / 2)[1] + m.at<Vec3b>(m.rows / 2, m.cols / 2)[2]);
 
 	/*-----don't touch-----*/
 
@@ -150,7 +138,7 @@ double dist(vector<double> feat1, vector<double> feat2)
 }
 
 int classify(Mat example, vector<pair<vector<double>, int> > &training, int nb_class) {
-	const int k = 1;
+	const int k = 20;
 	int predict = -1;
 	int classCount[100];
 	int maxI = -1, maxValue = -1;
@@ -222,10 +210,14 @@ char* next_pos(vector<pair<Mat, int> > input, vector<pair<vector<double>, int> >
 
 float model_evaluate(vector<pair<Mat, int> > training, int nb_class) {
 	float error = 0.0;
-	const int k = 1;
+	const int k = 11;
+	vector<pair<vector<double>, int> > images;
 	vector<vector<int> > k_fold(k + 1);
 	vector<bool> check(training.size(), false);
 	int sz = training.size() / k;
+
+	for (auto i : training)
+		images.push_back({ featureDescript(i.first), i.second });
 
 	for (int i = 0; i < k; i++) {
 		for (int j = 0; j < sz; j++) {
@@ -249,17 +241,17 @@ float model_evaluate(vector<pair<Mat, int> > training, int nb_class) {
 
 		for (int j = 0; j < training.size(); j++) {
 			bool check = false;
-			for (auto next : k_fold[i]) {
-				/*if (next == j) {
+			for (auto next : k_fold[i])
+				if (next == j) {
 					check = true;
 					break;
-				}*/
+				}
 
-				//if (check)
-					test.push_back(training[j]);
-				//else
-					train.push_back({ featureDescript(training[j].first), training[j].second });
-			}
+			if (check)
+				test.push_back(training[j]);
+			else
+				train.push_back({ images[j].first, images[j].second });
+
 		}
 
 		int result = 0;

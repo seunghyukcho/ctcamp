@@ -3,7 +3,7 @@
 
 int main()
 {
-	int nb_class = 2;
+	int nb_class = 4;
 	srand(time(NULL));
 	vector<pair<Mat, int> > train_set;
 
@@ -16,7 +16,7 @@ int main()
 
 	cout << 1 - model_evaluate(train_set, nb_class) << "\n";
 
-	while (1);
+	system("pause");
 
 	return 0;
 }

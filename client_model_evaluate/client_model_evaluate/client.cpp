@@ -1,5 +1,5 @@
-#include "client.h"
-#include "ai.h"
+#include"client.h"
+#include"ai.h"
 
 #include <stdio.h>
 #include <stdlib.h>

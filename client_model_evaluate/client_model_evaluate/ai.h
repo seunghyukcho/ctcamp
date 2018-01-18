@@ -20,6 +20,10 @@ typedef struct areaInfo
 	Mat picture_rgba;
 } areaInfo;
 
+struct img {
+	int coor, pd, dis;
+};
+
 int recvPicture(SOCKET sock, int flags, int idx);
 
 void sendResult(SOCKET sock, int playerNextPosition, int applePosition, int bombPosition);
@@ -27,12 +31,11 @@ void recvResult(SOCKET sock);
 
 void AI(SOCKET sock);
 
-void aiInit(void);
-void aiCode(int &playerNextPosition, int &applePosition, int &bombPosition);
+void aiInit(int classCount, vector<pair<Mat, int> > &train_set, vector<pair<vector<double>, int> > &preprocessTrain);
+void aiCode(int &playerNextPosition, int &applePosition, int &bombPosition, int nb_class, vector<pair<vector<double>, int> > train_feature);
 
 vector<double> featureDescript(Mat& m);
 int classify(Mat example, vector<pair<vector<double>, int> > &training, int nb_class);
-vector<pair<int, int> > predict(vector<pair<Mat, int> > sample, vector<pair<vector<double>, int> > model, int nb_class);
-char* next_pos(vector<pair<Mat, int> > input, vector<pair<vector<double>, int> > train, int nb_class);
+vector<int> predict(vector<pair<vector<double>, int> > model, int nb_class);
 float model_evaluate(vector<pair<Mat, int> > training, int nb_class);
 bool input(vector<pair<Mat, int> > &list, string folder, int cs);

@@ -1,27 +1,45 @@
 #include"client.h"
+
 #include"ai.h"
 
 int main()
 {
+	int caseNumber;
 	int nb_class = 4;
+
 	srand(time(NULL));
 	vector<pair<Mat, int> > train_set;
 
-	cout << "\n\nLOADING IMAGE...\n";
+	socketSet socketInfo;
 
-	for (int i = 0; i < nb_class; i++)
+	cout << "MENU (1: testing, 2: network)\n" << endl << "> ";
+
+	cin >> caseNumber;
+
+	switch (caseNumber)
 	{
-		string path = to_string(i);
-		if (!input(train_set, path, i)) {
-			cout << "error!\n";
-			return 0;
+	case 1:
+		cout << "\n\nLOADING IMAGE...\n";
+		for (int i = 0; i < nb_class; i++)
+		{
+			string path = to_string(i);
+			if (!input(train_set, path, i))
+				std::cout << "error" << endl;
 		}
+		cout << "COMPLETE!\n\n";
+		cout << "EVALUATING...\n";
+
+		cout << "ACCURACY : " << (1 - model_evaluate(train_set, nb_class)) * 100 << "%" << "\n\n\n";
+
+		break;
+
+	case 2:
+		initClient(&socketInfo);
+		runClient(&socketInfo);
+		endClient(&socketInfo);
+
+		break;
 	}
-
-	cout << "SUCCESS\n\n";
-
-	cout << "YOUR MODEL ACCURACY IS : ";
-	cout << (1 - model_evaluate(train_set, nb_class)) * 100 << "%\n\n\n";
 
 	system("pause");
 

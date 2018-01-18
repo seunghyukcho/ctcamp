@@ -15,13 +15,29 @@ using namespace cv;
 
 areaInfo area[MAX_SIZE_AREA];
 
-void aiInit(void)
+void aiInit(int classCount, vector<pair<Mat, int> > &train_set, vector<pair<vector<double>, int> > &preprocessTrain)
 {
+	preprocessTrain.clear();
+	train_set.clear();
+
 	for (int i = 0; i < MAX_SIZE_AREA; i++)
 	{
 		area[i].isWall = FALSE;
 		area[i].pictureLen = 0;
 		area[i].picture_png = (char*)calloc(MAX_SIZE_PICTURE, sizeof(char));
+	}
+
+	for (int i = 0; i < classCount; i++)
+	{
+		string path = to_string(i);
+		if (!input(train_set, path, i))
+			cout << "error!\n";
+	}
+
+	for (int i = 0; i < train_set.size(); i++)
+	{
+		auto tmp = train_set[i];
+		preprocessTrain.push_back({ featureDescript(tmp.first), tmp.second });
 	}
 }
 
@@ -86,7 +102,10 @@ int recvPicture(SOCKET sock, int flags, int idx)
 void recvResult(SOCKET sock)
 {
 	for (int i = 0; i < MAX_SIZE_AREA; i++)
+	{
 		recvPicture(sock, 0, i);
+		printf("%d / %d\n", i, MAX_SIZE_AREA);
+	}
 }
 
 void AI(SOCKET sock)
@@ -95,23 +114,83 @@ void AI(SOCKET sock)
 	int bombPosition;
 	int applePosition;
 
-	aiInit();
+	vector<pair<Mat, int> > train_set;
+	vector<pair<vector<double>, int> > train_feature;
+
+	aiInit(4, train_set, train_feature);
 
 	while (1)
 	{
 		recvResult(sock);
 
-		aiCode(playerNextPosition, applePosition, bombPosition);
+		aiCode(playerNextPosition, applePosition, bombPosition, 4, train_feature);
 
 		sendResult(sock, playerNextPosition, applePosition, bombPosition);
 	}
 }
 
-void aiCode(int &playerNextPosition, int &applePosition, int &bombPosition)
+int towardPoint(int idx)
 {
-	playerNextPosition = rand() % MAX_MOVE_AREA;
-	applePosition = (rand() * 2) % MAX_SIZE_AREA;
-	bombPosition = (rand() * 4) % MAX_SIZE_AREA;
+	switch (idx)
+	{
+	case 0:
+	case 6:
+	case 7:
+		return 0;
+	case 1:
+	case 8:
+	case 9:
+		return 1;
+	case 2:
+	case 11:
+	case 10:
+		return 2;
+	case 3:
+	case 12:
+	case 13:
+		return 3;
+	case 4:
+	case 14:
+	case 15:
+		return 4;
+	case 5:
+	case 16:
+	case 17:
+		return 5;
+
+	}
+}
+
+int moveCharacter(vector<int> classNumber)
+{
+	int idx = 0;
+	/*-----don't touch-----*/
+
+	// sample code using idx and classNumber on idx
+	for (auto tmp : classNumber)
+	{
+		if (tmp == 1)
+		{
+			towardPoint(idx);
+			break;
+		}
+
+		idx++;
+	}
+
+	/*-----don't touch-----*/
+	return idx;
+}
+
+
+void aiCode(int &playerNextPosition, int &applePosition, int &bombPosition, int nb_class, vector<pair<vector<double>, int> > train_feature)
+{
+	vector<int> result = predict(train_feature, nb_class);
+
+	moveCharacter(result);
+
+	applePosition = (rand() * 2) % 8;
+	bombPosition = rand() % 8;
 }
 
 vector<double> featureDescript(Mat& m) {
@@ -119,76 +198,99 @@ vector<double> featureDescript(Mat& m) {
 
 	/*-----don't touch-----*/
 
-	/*
-	you have to fill in here with a code 
-	that make a feature vector of image m
-	*/
+	// example code
+
+
+	Vec4b tmp = m.at<Vec4b>(m.rows / 2, m.cols / 2);
+
+	ret.push_back((double)tmp[2]);
+	ret.push_back((double)tmp[1]);
+	ret.push_back((double)tmp[0]);
+
 
 	/*-----don't touch-----*/
 
 	return ret;
 }
 
+double dist(vector<double> feat1, vector<double> feat2)
+{
+	vector<double>::iterator iter, iter2;
+
+	double score = 0;
+
+	for (iter = feat1.begin(), iter2 = feat2.begin();; iter++, iter2++)
+	{
+		if (iter == feat1.end() || iter2 == feat2.end())
+			break;
+
+		score += abs((*iter) - (*iter2));
+	}
+
+	return score;
+}
+
 int classify(Mat example, vector<pair<vector<double>, int> > &training, int nb_class) {
-	const int k = 20;
-	int predict = rand() % 4;
-
+	const int k = 10;
+	int predict = -1;
 	/*-----don't touch-----*/
 
-	/*
-	you have to fill in here
-	with a code that classify example class
-	the class is 0 : apple, 1 : bomb, 2 : player, 3 : background
-	you have to make a kNN code to classify and don't use other machine learning algorithm
-	*/
+	int classCount[100];
+	int maxI = -1, maxValue = -1;
+	vector<pair<double, int> > distances;
+
+	for (int i = 0; i < training.size(); i++)
+	{
+		auto tmp = training[i];
+		distances.push_back({ dist(tmp.first, featureDescript(example)), tmp.second });
+	}
+
+	sort(distances.begin(), distances.end());
+
+	for (int i = 0; i < 100; i++)
+		classCount[i] = 0;
+
+	for (int i = 0; i < k && i < distances.size(); i++) {
+		classCount[distances[i].second]++;
+	}
+
+	for (int i = 0; i < nb_class; i++)
+	{
+		if (maxValue < classCount[i])
+		{
+			maxValue = classCount[i];
+			maxI = i;
+		}
+	}
+
+	predict = maxI;
 
 	/*-----don't touch-----*/
-
 	return predict;
 }
 
-vector<pair<int, int> > predict(vector<pair<Mat, int> > sample, vector<pair<vector<double>, int> > model, int nb_class) {
-	vector<pair<int, int> > ret;
+vector<int> predict(vector<pair<vector<double>, int> > model, int nb_class) {
+	vector<int> ret;
 
-	for (auto example : sample) {
-		int pd_res = classify(example.first, model, nb_class);
-		ret.push_back({ example.second, pd_res });
+	for (int i = 0; i < MAX_SIZE_AREA; i++) {
+		if (area[i].isWall)
+			ret.push_back(-1);
+		else
+		{
+			int pd_res = classify(area[i].picture_rgba, model, nb_class);
+			ret.push_back(pd_res);
+		}
 	}
 
 	return ret;
 }
 
-char* next_pos(vector<pair<Mat, int> > input, vector<pair<vector<double>, int> > train, int nb_class) {
-	char ret[12];
-	vector<pair<int, int> > result = predict(input, train, nb_class);
-	int next = -1;
-	/*-----don't touch-----*/
-
-	/*
-	fill here and decide the next movement
-	in the vector result, the first element is the coordinate and the next pair is {predicted class, distance}
-	you have to decide the next coordinate - 'next'
-	*/
-
-	/*-----don't touch-----*/
-	*((int*)ret) = next;
-	*((int*)ret + 1) = 3;
-	*((int*)ret + 2) = 4;
-
-	return ret;
-}
-
-
 float model_evaluate(vector<pair<Mat, int> > training, int nb_class) {
 	float error = 0.0;
 	const int k = 11;
-	vector<pair<vector<double>, int> > images;
 	vector<vector<int> > k_fold(k + 1);
 	vector<bool> check(training.size(), false);
 	int sz = training.size() / k;
-
-	for (auto i : training)
-		images.push_back({ featureDescript(i.first), i.second });
 
 	for (int i = 0; i < k; i++) {
 		for (int j = 0; j < sz; j++) {
@@ -198,7 +300,6 @@ float model_evaluate(vector<pair<Mat, int> > training, int nb_class) {
 				j--;
 				continue;
 			}
-
 			k_fold[i].push_back(next);
 			check[next] = true;
 		}
@@ -207,7 +308,6 @@ float model_evaluate(vector<pair<Mat, int> > training, int nb_class) {
 	for (int i = 0; i < k; i++) {
 		vector<pair<Mat, int> > test;
 		vector<pair<vector<double>, int> > train;
-
 		for (int j = 0; j < training.size(); j++) {
 			bool check = false;
 			for (auto next : k_fold[i])
@@ -219,8 +319,7 @@ float model_evaluate(vector<pair<Mat, int> > training, int nb_class) {
 			if (check)
 				test.push_back(training[j]);
 			else
-				train.push_back({ images[j].first, images[j].second });
-
+				train.push_back({ featureDescript(training[j].first), training[j].second });
 		}
 
 		int result = 0;
@@ -230,10 +329,10 @@ float model_evaluate(vector<pair<Mat, int> > training, int nb_class) {
 				result++;
 		}
 
-		error += result;
+		error += (float)result / sz;
 	}
 
-	return (float)error / (k * sz);
+	return (float)error / k;
 }
 
 bool input(vector<pair<Mat, int> > &list, string folder, int cs) {
@@ -257,7 +356,7 @@ bool input(vector<pair<Mat, int> > &list, string folder, int cs) {
 			continue;
 
 		string name(FindData.cFileName);
-		Mat file = imread(realPath + name, -1);
+		Mat file = imread(realPath + name);
 
 		list.push_back({ file, cs });
 
@@ -265,5 +364,5 @@ bool input(vector<pair<Mat, int> > &list, string folder, int cs) {
 
 	FindClose(hFind);
 
-	return 1;
+	return true;
 }

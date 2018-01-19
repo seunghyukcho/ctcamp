@@ -356,7 +356,7 @@ bool input(vector<pair<Mat, int> > &list, string folder, int cs) {
 			continue;
 
 		string name(FindData.cFileName);
-		Mat file = imread(realPath + name);
+		Mat file = imread(realPath + name, -1);
 
 		list.push_back({ file, cs });
 

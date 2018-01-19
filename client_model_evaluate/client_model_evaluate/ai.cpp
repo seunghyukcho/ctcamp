@@ -182,7 +182,6 @@ int moveCharacter(vector<int> classNumber)
 	return idx;
 }
 
-
 void aiCode(int &playerNextPosition, int &applePosition, int &bombPosition, int nb_class, vector<pair<vector<double>, int> > train_feature)
 {
 	vector<int> result = predict(train_feature, nb_class);
@@ -199,8 +198,6 @@ vector<double> featureDescript(Mat& m) {
 	/*-----don't touch-----*/
 
 	// example code
-
-
 	Vec4b tmp = m.at<Vec4b>(m.rows / 2, m.cols / 2);
 
 	ret.push_back((double)tmp[2]);
@@ -213,57 +210,12 @@ vector<double> featureDescript(Mat& m) {
 	return ret;
 }
 
-double dist(vector<double> feat1, vector<double> feat2)
-{
-	vector<double>::iterator iter, iter2;
-
-	double score = 0;
-
-	for (iter = feat1.begin(), iter2 = feat2.begin();; iter++, iter2++)
-	{
-		if (iter == feat1.end() || iter2 == feat2.end())
-			break;
-
-		score += abs((*iter) - (*iter2));
-	}
-
-	return score;
-}
-
 int classify(Mat example, vector<pair<vector<double>, int> > &training, int nb_class) {
 	const int k = 10;
 	int predict = -1;
 	/*-----don't touch-----*/
 
-	int classCount[100];
-	int maxI = -1, maxValue = -1;
-	vector<pair<double, int> > distances;
 
-	for (int i = 0; i < training.size(); i++)
-	{
-		auto tmp = training[i];
-		distances.push_back({ dist(tmp.first, featureDescript(example)), tmp.second });
-	}
-
-	sort(distances.begin(), distances.end());
-
-	for (int i = 0; i < 100; i++)
-		classCount[i] = 0;
-
-	for (int i = 0; i < k && i < distances.size(); i++) {
-		classCount[distances[i].second]++;
-	}
-
-	for (int i = 0; i < nb_class; i++)
-	{
-		if (maxValue < classCount[i])
-		{
-			maxValue = classCount[i];
-			maxI = i;
-		}
-	}
-
-	predict = maxI;
 
 	/*-----don't touch-----*/
 	return predict;

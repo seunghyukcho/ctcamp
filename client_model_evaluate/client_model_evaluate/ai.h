@@ -31,13 +31,13 @@ struct img {
 
 int recvPicture(SOCKET sock, int flags, int idx);
 
-void sendResult(SOCKET sock, int playerNextPosition, int applePosition, int bombPosition);
+void sendResult(SOCKET sock, int playerNextPosition);
 void recvResult(SOCKET sock);
 
 void AI(SOCKET sock);
 
 void aiInit(int classCount, vector<pair<Mat, int> > &train_set, vector<pair<vector<double>, int> > &preprocessTrain);
-void aiCode(int &playerNextPosition, int &applePosition, int &bombPosition, int nb_class, vector<pair<vector<double>, int> > train_feature);
+void aiCode(int &playerNextPosition, int nb_class, vector<pair<vector<double>, int> > train_feature);
 
 vector<double> featureDescript(Mat& m);
 int classify(Mat example, vector<pair<vector<double>, int> > &training, int nb_class);

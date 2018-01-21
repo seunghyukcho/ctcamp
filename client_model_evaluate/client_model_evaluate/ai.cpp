@@ -14,6 +14,7 @@ using namespace std;
 using namespace cv;
 
 areaInfo area[MAX_SIZE_AREA];
+int dominance;
 
 void aiInit(int classCount, vector<pair<Mat, int> > &train_set, vector<pair<vector<double>, int> > &preprocessTrain)
 {
@@ -22,7 +23,7 @@ void aiInit(int classCount, vector<pair<Mat, int> > &train_set, vector<pair<vect
 
 	for (int i = 0; i < MAX_SIZE_AREA; i++)
 	{
-		area[i].isWall = FALSE;
+		area[i].isWall = 1;
 		area[i].pictureLen = 0;
 		area[i].picture_png = (char*)calloc(MAX_SIZE_PICTURE, sizeof(char));
 	}
@@ -41,15 +42,13 @@ void aiInit(int classCount, vector<pair<Mat, int> > &train_set, vector<pair<vect
 	}
 }
 
-void sendResult(SOCKET sock, int playerNextPosition, int applePosition, int bombPosition)
+void sendResult(SOCKET sock, int playerNextPosition)
 {
-	char sendString[12];
+	char sendString[4];
 
 	*((int*)sendString) = playerNextPosition;
-	*((int*)sendString + 1) = applePosition;
-	*((int*)sendString + 2) = bombPosition;
 
-	send(sock, sendString, 12, 0);
+	send(sock, sendString, 4, 0);
 }
 
 // 0 is wall, 1 is fine
@@ -68,10 +67,12 @@ int recvPicture(SOCKET sock, int flags, int idx)
 
 	recvLen = *((int*)recvTmpChar);
 
+	printf("state : %d, %d\n", isFine, recvLen);
+
 	area[idx].isWall = !isFine;
 	area[idx].pictureLen = recvLen;
 
-	if (!isFine)
+	if (isFine == 2)
 		return -1;
 
 	while (1)
@@ -101,10 +102,19 @@ int recvPicture(SOCKET sock, int flags, int idx)
 
 void recvResult(SOCKET sock)
 {
+	char recvTmpChar[4];
+
+	recv(sock, recvTmpChar, 4, 0);
+
+	dominance = *((int*)recvTmpChar);
+
+	printf("dominance : %d\n", dominance);
+
 	for (int i = 0; i < MAX_SIZE_AREA; i++)
 	{
+		printf("%d / %d - ", i, MAX_SIZE_AREA);
+
 		recvPicture(sock, 0, i);
-		printf("%d / %d\n", i, MAX_SIZE_AREA);
 	}
 }
 
@@ -123,9 +133,9 @@ void AI(SOCKET sock)
 	{
 		recvResult(sock);
 
-		aiCode(playerNextPosition, applePosition, bombPosition, 4, train_feature);
+		aiCode(playerNextPosition, 4, train_feature);
 
-		sendResult(sock, playerNextPosition, applePosition, bombPosition);
+		sendResult(sock, playerNextPosition);
 	}
 }
 
@@ -164,6 +174,7 @@ int towardPoint(int idx)
 int moveCharacter(vector<int> classNumber)
 {
 	int idx = 0;
+	int position = 3;
 	/*-----don't touch-----*/
 
 	// sample code using idx and classNumber on idx
@@ -171,25 +182,30 @@ int moveCharacter(vector<int> classNumber)
 	{
 		if (tmp == 1)
 		{
-			towardPoint(idx);
+			position = towardPoint(idx);
 			break;
 		}
 
 		idx++;
 	}
 
+	if (dominance == 1)
+		position = -1;
+	else
+		position = 3;
+
 	/*-----don't touch-----*/
-	return idx;
+
+	return position;
 }
 
-void aiCode(int &playerNextPosition, int &applePosition, int &bombPosition, int nb_class, vector<pair<vector<double>, int> > train_feature)
+void aiCode(int &playerNextPosition, int nb_class, vector<pair<vector<double>, int> > train_feature)
 {
 	vector<int> result = predict(train_feature, nb_class);
 
-	moveCharacter(result);
+	playerNextPosition = moveCharacter(result);
 
-	applePosition = (rand() * 2) % 8;
-	bombPosition = rand() % 8;
+	printf("Next : %d\n", playerNextPosition);
 }
 
 vector<double> featureDescript(Mat& m) {
@@ -197,12 +213,6 @@ vector<double> featureDescript(Mat& m) {
 
 	/*-----don't touch-----*/
 
-	// example code
-	Vec4b tmp = m.at<Vec4b>(m.rows / 2, m.cols / 2);
-
-	ret.push_back((double)tmp[2]);
-	ret.push_back((double)tmp[1]);
-	ret.push_back((double)tmp[0]);
 
 
 	/*-----don't touch-----*/
@@ -213,11 +223,13 @@ vector<double> featureDescript(Mat& m) {
 int classify(Mat example, vector<pair<vector<double>, int> > &training, int nb_class) {
 	const int k = 10;
 	int predict = -1;
-	/*-----don't touch-----*/
-
-
 
 	/*-----don't touch-----*/
+
+
+
+	/*-----don't touch-----*/
+
 	return predict;
 }
 
@@ -225,7 +237,7 @@ vector<int> predict(vector<pair<vector<double>, int> > model, int nb_class) {
 	vector<int> ret;
 
 	for (int i = 0; i < MAX_SIZE_AREA; i++) {
-		if (area[i].isWall)
+		if (area[i].isWall == 2)
 			ret.push_back(-1);
 		else
 		{

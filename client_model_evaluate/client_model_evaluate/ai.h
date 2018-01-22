@@ -39,7 +39,7 @@ struct img {
 
 int recvPicture(SOCKET sock, int flags, int idx);
 
-void sendResult(SOCKET sock, int playerNextPosition, int applePosition, int bombPosition);
+void sendResult(SOCKET sock, int playerNextPosition);
 void recvResult(SOCKET sock);
 
 void AI(SOCKET sock);

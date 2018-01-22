@@ -343,6 +343,24 @@ bool input(vector<pair<Mat, int> > &list, string folder, int cs) {
 
 		string name(FindData.cFileName);
 		Mat file = imread(realPath + name, -1);
+		if (file.channels() == 3)
+		{
+			vector<cv::Mat> channels;
+			split(file, channels);
+			Mat alpha;
+			channels[0].copyTo(alpha);
+
+			for (int i = 0; i < file.rows; i++)
+			{
+				for (int j = 0; j < file.cols; j++)
+				{
+					char& a = alpha.at<char>(i, j);
+					a = 255;
+				}
+			}
+			channels.push_back(alpha);
+			merge(channels, file);
+		}
 
 		list.push_back({ file, cs });
 

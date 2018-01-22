@@ -1,16 +1,23 @@
 #include"client.h"
-
 #include"ai.h"
 
 int main()
 {
+	/*
+	variable information
+	- caseNumber [type : int] => 1 : test using k-fold, 2 : run AI
+	- nb_class [type : int] => number of class ( apple, bomb, face, background ) : total (4)
+	- train_set [type : array(img, true_class_number)] => img is literally image, true_class_number is true class of that image.
+	- socketInfo => you don't have to know this variable
+	*/
+
 	int caseNumber;
 	int nb_class = 4;
 
-	srand(time(NULL));
 	vector<pair<Mat, int> > train_set;
-
 	socketSet socketInfo;
+
+	srand(time(NULL));
 
 	cout << "MENU (1: testing, 2: network)\n" << endl << "> ";
 

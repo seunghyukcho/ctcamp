@@ -14,7 +14,7 @@ using namespace std;
 using namespace cv;
 
 areaInfo area[MAX_SIZE_AREA];
-int dominance;
+int dominance = 0;
 
 void aiInit(int classCount, vector<pair<Mat, int> > &train_set, vector<pair<vector<double>, int> > &preprocessTrain)
 {
@@ -23,7 +23,7 @@ void aiInit(int classCount, vector<pair<Mat, int> > &train_set, vector<pair<vect
 
 	for (int i = 0; i < MAX_SIZE_AREA; i++)
 	{
-		area[i].isWall = 1;
+		area[i].isWall = FALSE;
 		area[i].pictureLen = 0;
 		area[i].picture_png = (char*)calloc(MAX_SIZE_PICTURE, sizeof(char));
 	}
@@ -51,8 +51,6 @@ void sendResult(SOCKET sock, int playerNextPosition)
 	send(sock, sendString, 4, 0);
 }
 
-// 0 is wall, 1 is fine
-
 int recvPicture(SOCKET sock, int flags, int idx)
 {
 	int recvLen, tmpLen, isFine;
@@ -69,10 +67,17 @@ int recvPicture(SOCKET sock, int flags, int idx)
 
 	printf("state : %d, %d\n", isFine, recvLen);
 
-	area[idx].isWall = !isFine;
+	if (isFine == 1)
+		area[idx].isWall = FALSE;
+	else
+		area[idx].isWall = TRUE;
+
+	if (area[idx].isWall)
+		printf("%d : wall detcted\n", idx);
+
 	area[idx].pictureLen = recvLen;
 
-	if (isFine == 2)
+	if (area[idx].isWall)
 		return -1;
 
 	while (1)
@@ -104,9 +109,16 @@ void recvResult(SOCKET sock)
 {
 	char recvTmpChar[4];
 
+	int tmpDominance;
+
 	recv(sock, recvTmpChar, 4, 0);
 
-	dominance = *((int*)recvTmpChar);
+	tmpDominance = *((int*)recvTmpChar);
+
+	if (tmpDominance == 2)
+		dominance = 1;
+	else
+		dominance = 0;
 
 	printf("dominance : %d\n", dominance);
 
@@ -174,10 +186,12 @@ int towardPoint(int idx)
 int moveCharacter(vector<int> classNumber)
 {
 	int idx = 0;
-	int position = 3;
 	/*-----don't touch-----*/
 
 	// sample code using idx and classNumber on idx
+
+	int position = 3;
+
 	for (auto tmp : classNumber)
 	{
 		if (tmp == 1)
@@ -189,10 +203,8 @@ int moveCharacter(vector<int> classNumber)
 		idx++;
 	}
 
-	if (dominance == 1)
+	if (dominance)
 		position = -1;
-	else
-		position = 3;
 
 	/*-----don't touch-----*/
 
@@ -213,6 +225,16 @@ vector<double> featureDescript(Mat& m) {
 
 	/*-----don't touch-----*/
 
+	// example code
+	for (int r = 0; r<3; r++)
+		for (int c = 0; c < 3; c++)
+		{
+			Vec4b tmp = m.at<Vec4b>(70 + 20 * r, 70 + 20 * c);
+
+			ret.push_back((double)tmp[2]);
+			ret.push_back((double)tmp[1]);
+			ret.push_back((double)tmp[0]);
+		}
 
 
 	/*-----don't touch-----*/
@@ -237,7 +259,7 @@ vector<int> predict(vector<pair<vector<double>, int> > model, int nb_class) {
 	vector<int> ret;
 
 	for (int i = 0; i < MAX_SIZE_AREA; i++) {
-		if (area[i].isWall == 2)
+		if (area[i].isWall)
 			ret.push_back(-1);
 		else
 		{
